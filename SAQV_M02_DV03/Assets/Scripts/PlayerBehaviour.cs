@@ -23,6 +23,9 @@ public class PlayerBehaviour : MonoBehaviour
     private CapsuleCollider _col;
     private GameBehaviour _gameManager;
 
+    public delegate void JumpingEvent();
+    public event JumpingEvent playerJump;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -57,6 +60,7 @@ public class PlayerBehaviour : MonoBehaviour
         if (IsGrounded() && doJump)
         {
             _rb.AddForce(Vector3.up * jumpVelocity, ForceMode.Impulse);
+            playerJump();
             doJump = false;
         }
 

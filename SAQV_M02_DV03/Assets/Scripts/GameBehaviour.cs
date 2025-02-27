@@ -63,6 +63,9 @@ public class GameBehaviour : MonoBehaviour, IManager
         }
     }
 
+    public delegate void DebugDelegate(string newText);
+    public DebugDelegate debug = Print;
+
     void endGame(bool winLose)
     {
         if (winLose)
@@ -78,18 +81,40 @@ public class GameBehaviour : MonoBehaviour, IManager
     void Start()
     {
         Initialize();
+        InventoryList<string> inventoryList = new InventoryList<string>();
+        inventoryList.SetItem("Potion");
+        UnityEngine.Debug.Log(inventoryList.item);
     }
 
     public void Initialize()
     {
         _state = "Manager initialized..";
         _state.FancyDebug();
-        UnityEngine.Debug.Log(_state);
+        debug(_state);
+        LogWithDelegate(debug);
+        GameObject player = GameObject.Find("Player");
+        PlayerBehaviour playerBehaviour = player.GetComponent<PlayerBehaviour>();
+        playerBehaviour.playerJump += HandlePlayerJump;
         lootStack.Push("Sword of Doom");
         lootStack.Push("HP+");
         lootStack.Push("Golden Key");
         lootStack.Push("Winged Boot");
         lootStack.Push("Mythril Bracers");
+    }
+
+    public void HandlePlayerJump()
+    {
+        debug("Player has jumped...");
+    }
+
+    public static void Print(string newText)
+    {
+        UnityEngine.Debug.Log(newText);
+    }
+
+    public void LogWithDelegate(DebugDelegate del)
+    {
+        del("Delegating the debug task...");
     }
 
     void OnGUI()
@@ -108,21 +133,34 @@ public class GameBehaviour : MonoBehaviour, IManager
         {
             if (GUI.Button(new Rect(Screen.width / 2 - 100, Screen.height / 2 - 50, 200, 100), "You lose..."))
             {
-                Utilities.RestartLevel();
+                try
+                {
+                    Utilities.RestartLevel(-1);
+                    debug("Level restarted successfully...");
+                }
+                catch (System.ArgumentException e)
+                {
+                    Utilities.RestartLevel(0);
+                    debug("Reverting to scene 0: " + e.ToString());
+                }
+                finally
+                {
+                    debug("Restart handled...");
+                }
             }
         }
     }
 
     public void PrintLootReport()
     {
-        var currentItem;
-        if (lootStack.TryPop(out currentItem))
+        string currentItem;
+        if (!(lootStack.TryPop(out currentItem)))
         {
             UnityEngine.Debug.LogFormat("No items in Stack");
-            break;
+            return;
         }
-        var nextItem;
-        if (lootStack.TryPeek())
+        string nextItem;
+        if (lootStack.TryPeek(out nextItem))
         {
             UnityEngine.Debug.LogFormat("You got a {0}! You've got a good chance of finding a {1} next!", currentItem, nextItem);
         }
